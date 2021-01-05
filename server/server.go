@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	pb "src/grpc-streaming/proto"
+	pb "github.com/midepeter/grpc-streaming/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
