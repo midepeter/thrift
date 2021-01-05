@@ -1,0 +1,20 @@
+syntax = "proto3";
+package proto;
+
+
+
+service ProcessTransaction {
+    rpc MakeTransaction(MoneyRequest) returns (stream MoneyResponse){}
+}
+
+message MoneyRequest{
+    string Amount = 1;
+    string From = 2;
+    string To = 3;
+}
+
+message MoneyResponse {
+    bool Confirmation = 1;
+    int32 status = 2;
+    string description = 3;
+}
