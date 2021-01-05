@@ -37,7 +37,7 @@ func main() {
 		log.Fatalf("Listening error: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterMoneyTransactionServer(s, struct{})
+	pb.RegisterMoneyTransactionServer(s, server{})
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Serving error: %v", err)
