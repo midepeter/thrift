@@ -1,34 +1,51 @@
 syntax = "proto3";
-package thriftapi;
+package transaction;
 
 import "google/protobuf/timestamp.proto";
 
-service Thrift {
-    rpc Transactions (stream Transaction) returns (Transaction);
+option go_package = "./transactionpb";
+
+service Transactions {
+    rpc Deposit (stream DepositRequest) returns (DepositResponse);
+    rpc Lock(LockRequest) returns (LockResponse);
+    rpc Withdraw(WithdrawalRequest) returns (WithdrawalResponse);
 }
 
-service User {
-    rpc Register(UserRequest) returns (UserResponse) {}
-    rpc SignIn(UserRequest) returns(Response) {}
+message DepositRequest {
+    string user_id = 1;
+    float amount = 2;
+    string type = 3;
+    google.protobuf.Timestamp updated = 4;
 }
 
-message UserRequest {
-    string name = 1;
-    string email = 2;
-    string password = 3;
+message DepositResponse {
+    string user_id = 1;
+    string withdrawalMessage = 2;
+    status depositResponse = 3;
 }
 
-message UserResponse {
-    string UserID = 1;
-}
-
-message Transaction {
+message LockRequest {
     float amount = 1;
-    string type = 2;
-    google.protobuf.Timestamp updated = 3;
+    google.protobuf.Timestamp duration = 3;
 }
 
-message Response {
-    bool resp = 1;
+message LockResponse {  
+    status lockResponse = 1;
+}
+
+message WithdrawalRequest {
+    string userId = 1;
+    float amount = 2;
+}
+
+message WithdrawalResponse {
+    string withdrawalMessage = 1;
+    status withdrawalResonse = 2;
+}
+
+enum status {
+    FAILED = 0;
+    PENDING = 1;
+    SUCCESS = 2;
 }
 
