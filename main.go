@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"os/signal"
 
 	"github.com/midepeter/grpc-service/db"
@@ -23,10 +25,9 @@ var (
 )
 
 func main() {
-
 	var (
-		certFile string
-		keyFile  string
+		certFile string = "server.crt"
+		keyFile  string = "server.key"
 	)
 	_, err := d.Setup(context.Background(), "")
 	if err != nil {
@@ -46,17 +47,19 @@ func main() {
 		panic(fmt.Errorf("Failed while listen on port %s with error %v\n", port, err))
 	}
 
+	fmt.Println("Spinning server on port ", port)
 	if err := srv.Serve(lis); err != nil {
 		panic(fmt.Errorf("Failed while serve on port %s with error %v\n", port, err))
 	}
 
 	var cancel context.CancelFunc
-	ctx, cancel := signal.NotifyContext(context.Background())
-	for {
-		select {
-		case <-ctx.Done():
-			cancel()
-		}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		cancel()
+		log.Println("Shutting down server........")
 	}
 }
 
