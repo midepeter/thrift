@@ -2,22 +2,41 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 
+	"github.com/midepeter/grpc-service/db"
 	"github.com/midepeter/grpc-service/proto/userpb"
 )
 
-const (
-	port = ":5000"
-)
 
-type Server struct{}
+
+type Server struct {
+	db db.Db
+}
 
 func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
-	log.Println("==Register User ===")
+	log.Println("=== Register User ===")
+	stmt := `INSERT INTO users `
+	err := s.db.Insert(ctx, stmt)
+	if err != nil {
+		return nil, errors.New("Failed to insert user detailed to db")
+	}
+
 	return nil, nil
 }
 
+func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
+	log.Println("=== LogIn User ===")
+	stmt := `SELECT * FROM users`
+
+	err := s.db.Select(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil,nil
+}
 
 func startUserServer() error {
 	return nil
