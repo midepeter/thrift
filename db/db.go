@@ -6,11 +6,11 @@ import (
 	"errors"
 )
 
-type Db struct{
+type Db struct {
 	Db *sql.DB
 }
 
-func (d *Db) Setup(ctx context.Context,dsn string) (*sql.DB, error) {
+func (d *Db) Setup(ctx context.Context, dsn string) (*sql.DB, error) {
 	db, err := sql.Open("sql", dsn)
 	if err != nil {
 		return nil, errors.Unwrap(err)
@@ -40,7 +40,7 @@ func (d *Db) Insert(ctx context.Context, stmt string) error {
 		return err
 	}
 
-	r, _:= result.RowsAffected()
+	r, _ := result.RowsAffected()
 	if r == 0 {
 		return errors.New("Database query failed")
 	}
@@ -58,7 +58,7 @@ func (d *Db) Update(ctx context.Context, stmt string) error {
 		return err
 	}
 
-	r, _:= result.RowsAffected()
+	r, _ := result.RowsAffected()
 	if r == 0 {
 		return errors.New("Database query failed")
 	}
@@ -76,7 +76,7 @@ func (d *Db) Delete(ctx context.Context, stmt string) error {
 		return err
 	}
 
-	r, _:= result.RowsAffected()
+	r, _ := result.RowsAffected()
 	if r == 0 {
 		return errors.New("Database query failed")
 	}
@@ -94,7 +94,7 @@ func (d *Db) Select(ctx context.Context, stmt string) error {
 		return err
 	}
 
-	r, _:= result.RowsAffected()
+	r, _ := result.RowsAffected()
 	if r == 0 {
 		return errors.New("Database query failed")
 	}

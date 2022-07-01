@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -12,8 +11,8 @@ import (
 
 	"github.com/midepeter/grpc-service/db"
 	"github.com/midepeter/grpc-service/proto/userpb"
+	"github.com/midepeter/grpc-service/server"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -25,22 +24,24 @@ var (
 )
 
 func main() {
-	var (
-		certFile string = "server.crt"
-		keyFile  string = "server.key"
-	)
+	// var (
+	// 	certFile string = "server.crt"
+	// 	keyFile  string = "server.key"
+	// )
 	_, err := d.Setup(context.Background(), "")
 	if err != nil {
 		errors.Unwrap(err)
 		return
 	}
 
-	srv, err := setUpTLS(certFile, keyFile)
-	if err != nil {
-		panic(fmt.Errorf("Failed while setting up tls %v\n", err))
-	}
+	// srv, err := setUpTLS(certFile, keyFile)
+	// if err != nil {
+	// 	panic(fmt.Errorf("Failed while setting up tls %v\n", err))
+	// }
 
-	userpb.RegisterUserServer(srv, &userpb.UnimplementedUserServer{})
+	srv := grpc.NewServer()
+
+	userpb.RegisterUserServer(srv, &server.Server{})
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -58,22 +59,22 @@ func main() {
 
 	select {
 	case <-ctx.Done():
-		cancel()
 		log.Println("Shutting down server........")
+		cancel()
 	}
 }
 
-func setUpTLS(certFile, keyFile string) (*grpc.Server, error) {
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to parse certificates: %v\n", err)
+// func setUpTLS(certFile, keyFile string) (*grpc.Server, error) {
+// 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("Unable to parse certificates: %v\n", err)
 
-	}
+// 	}
 
-	options := []grpc.ServerOption{
-		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
-	}
+// 	options := []grpc.ServerOption{
+// 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
+// 	}
 
-	srv := grpc.NewServer(options...)
-	return srv, nil
-}
+// 	srv := grpc.NewServer(options...)
+// 	return srv, nil
+// }
