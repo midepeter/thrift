@@ -1,0 +1,6 @@
+CREATE TABLE users (
+    ID STRING NOT NULL PRIMARY KEY,
+    Email VARCHAR(50) NOT NULL,
+    Password VARCHAR(50) NOT NULL,
+    Date_Created VARCHAR(50) NOT NULL
+);
