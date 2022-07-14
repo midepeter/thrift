@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.14.0
 
-package grpcservice
+package db
 
 import (
 	"context"

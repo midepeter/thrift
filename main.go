@@ -2,55 +2,72 @@ package main
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
+	"flag"
 
 	"github.com/midepeter/grpc-service/db"
 	"github.com/midepeter/grpc-service/proto/userpb"
 	"github.com/midepeter/grpc-service/server"
 	"google.golang.org/grpc"
+    _ "github.com/lib/pq"
+	"github.com/rs/zerolog"
+	log "github.com/rs/zerolog/log"
 )
 
 const (
 	port = ":5000"
 )
 
-var (
-	d db.Db
-)
 
 func main() {
 	// var (
 	// 	certFile string = "server.crt"
 	// 	keyFile  string = "server.key"
 	// )
-	_, err := d.Setup(context.Background(), "")
-	if err != nil {
-		errors.Unwrap(err)
-		return
-	}
 
 	// srv, err := setUpTLS(certFile, keyFile)
 	// if err != nil {
 	// 	panic(fmt.Errorf("Failed while setting up tls %v\n", err))
 	// }
 
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	fatal := flag.Bool("fatal", false, "It is used to set the debug level to either fatal or not")
+	
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	if *fatal {
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	}
+
+	connString := fmt.Sprintf("postgres://midepeter:password@localhost:5432/userdb?sslmode=disable")
+
+	dbConn, err := sql.Open("postgres", connString)
+	if err != nil {
+		log.Fatal().Msg("Failed to set up database connection")
+		panic(err)
+	}
+
 	srv := grpc.NewServer()
 
-	userpb.RegisterUserServer(srv, &server.Server{})
+	queries := db.New(dbConn)
+
+	userpb.RegisterUserServer(srv, &server.Server{
+		Db: queries,
+	})
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
-		panic(fmt.Errorf("Failed while listen on port %s with error %v\n", port, err))
+		panic(err)
 	}
-
-	fmt.Println("Spinning server on port ", port)
+	
+	log.Info().Msgf("Server running on port %s", port)
 	if err := srv.Serve(lis); err != nil {
-		panic(fmt.Errorf("Failed while serve on port %s with error %v\n", port, err))
+		log.Debug().Msg("Server failed abruptly")
+		panic(err)
 	}
 
 	var cancel context.CancelFunc
@@ -59,7 +76,7 @@ func main() {
 
 	select {
 	case <-ctx.Done():
-		log.Println("Shutting down server........")
+		log.Info().Msg("Shutting down server")
 		cancel()
 	}
 }

@@ -1,3 +1,4 @@
 .env
 server.crt
 server.key
+grpc-service

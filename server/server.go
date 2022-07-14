@@ -2,53 +2,86 @@ package server
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
-	"log"
+	"strconv"
+	"time"
 
-	"github.com/midepeter/grpc-servie/db"
+	"github.com/midepeter/grpc-service/db"
 	"github.com/midepeter/grpc-service/proto/userpb"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 )
 
-var store map[string]string
 
 type Server struct {
-	db db.Db
+	Db *db.Queries
+	log *zerolog.Logger
 	userpb.UnimplementedUserServer
 }
 
 func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
-	//log.Println("=== Register User ===")
 	var err error
 	if in.Email == "" || in.Password == " " {
 		return nil, errors.New("Invalid Email or Password")
 	}
 
-	hashPassword := md5.Sum([]byte(in.Password))
-	
-	stmt := fmt.Sprintln(
-		`INSERT INTO users (name, email, password) VALUES (%s, %s, %s)`,
-		in.Name, in.Email, hashPassword
-	)
-
-	err = s.db.Insert(ctx, stmt )
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), 10)
 	if err != nil {
-		return nil, errors.New("Unable to insert user details into database") 
+		return nil, err
 	}
 
-	//log.Printf("The username %s password %s email %s", in.Name, in.Password, in.Email)
-	return &userpb.UserResponse{}, nil
+	dateCreated := time.Now().String()
+
+	user, err := s.Db.CreateUser(ctx, db.CreateUserParams{
+		ID: 1,
+		Email: in.Email,
+		Password: string(hashPassword),
+		DateCreated: dateCreated,
+	})
+	
+	if err != nil {
+		return nil, errors.New("Unable to insert user details into database") 
+	} 
+    
+	s.log.Info().Msgf("The user %s registered successfully", user.Email)
+
+	return &userpb.UserResponse{
+		UserID: strconv.Itoa(int(user.ID)),
+		StatusCode: true,
+	}, nil
 }
 
 func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
-	log.Println("=== LogIn User ===")
-	log.Println("the user is being signed in")
+    var (
+        user string
+        email string
+    )
 
+	if in.Email != "" && in.Password != ""  {
+		return nil, errors.New("Invalid Email or Password")
+	}
+
+	switch in {
+	case in.Email:
+		user, err := s.Db.GetUser(ctx, strconv.Itoa(in.UserID))
+		if err != nil {
+			return nil, errors.New("Invalid credentials")
+		}
+	default: 
+		return nil, errors.New("Unable to retrieve user details")
+	}
+
+    token, err := utils.CreateToken()
+    if err != nil {
+        return nil, err
+    }
+	
 	return nil, nil
 }
 
 func (s *Server) SignOut(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
-	log.Println("=== SignOut User===")
-	log.Println("The user is being signed out")
+ //	log.Println("=== SignOut User===")
+	//log.Println("The user is being signed out")
 	return nil, nil
 }

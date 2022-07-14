@@ -3,7 +3,7 @@
 //   sqlc v1.14.0
 // source: userquery.sql
 
-package grpcservice
+package db
 
 import (
 	"context"
@@ -11,21 +11,28 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
+  id,
   email,
   password, 
   date_created
-) VALUES ($1, $2, $3)
+) VALUES ($1, $2, $3, $4)
 RETURNING id, email, password, date_created
 `
 
 type CreateUserParams struct {
+	ID          int32
 	Email       string
 	Password    string
 	DateCreated string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Password, arg.DateCreated)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.ID,
+		arg.Email,
+		arg.Password,
+		arg.DateCreated,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -40,7 +47,7 @@ const getUser = `-- name: GetUser :one
 SELECT id, email, password, date_created FROM users WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
+func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i User
 	err := row.Scan(
@@ -57,7 +64,7 @@ DELETE FROM users WHERE id = $1
 RETURNING id, email, password, date_created
 `
 
-func (q *Queries) RemoveUser(ctx context.Context, id string) (User, error) {
+func (q *Queries) RemoveUser(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRowContext(ctx, removeUser, id)
 	var i User
 	err := row.Scan(

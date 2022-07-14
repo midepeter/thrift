@@ -2,12 +2,12 @@
 // versions:
 //   sqlc v1.14.0
 
-package grpcservice
+package db
 
 import ()
 
 type User struct {
-	ID          string
+	ID          int32
 	Email       string
 	Password    string
 	DateCreated string
