@@ -2,21 +2,25 @@ package utils
 
 import (
 	"bytes"
-	"fmt"
+	"log"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 type Claims struct {
-	UserId string `json:"user_id"`
+	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
 
-func CreateToken(secretKey, userId string) string {
+var (
+	secretKey = "my_secret_key"
+)
+
+func GenerateJwtToken(Email string) (string, error) {
 
 	claims := Claims{
-		userId,
+		Email,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -25,19 +29,18 @@ func CreateToken(secretKey, userId string) string {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	ss, err := token.SignedString(secretKey)
+	ss, err := token.SignedString([]byte(secretKey))
 	if err != nil {
+		log.Println("The error", err)
 		panic(err)
 	}
 
-	return ss
+	return ss, nil
 }
 
 func ParseToken(tokenString string) string {
-	t, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (user interface{}, err error) {
-		user = []byte("secret_key")
-		err = nil
-		return
+	_, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (user interface{}, err error) {
+		return secretKey, nil
 	})
 
 	if err != nil {
@@ -46,9 +49,9 @@ func ParseToken(tokenString string) string {
 
 	out := new(bytes.Buffer)
 
-	if claims, ok := t.Claims.(*Claims); ok && token.Valid {
-		fmt.Fprintf(out, "%v %v", claims.userId, claims.Issuer)
-	}
+	// if claims, ok := t.Claims.(*Claims); ok && token.Valid {
+	// 	fmt.Fprintf(out, "%v %v", claims.userId, claims.Issuer)
+	// }
 
 	return out.String()
 }

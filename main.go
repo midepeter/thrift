@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"flag"
 
-	"github.com/midepeter/grpc-service/db"
+	"github.com/midepeter/grpc-service/db/userStore"
 	"github.com/midepeter/grpc-service/proto/userpb"
 	"github.com/midepeter/grpc-service/server"
 	"google.golang.org/grpc"

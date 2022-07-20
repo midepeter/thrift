@@ -6,41 +6,48 @@ import "google/protobuf/timestamp.proto";
 option go_package = "./transactionpb";
 
 service Transactions {
-    rpc Deposit (stream DepositRequest) returns (DepositResponse);
+    rpc Deposit (DepositRequest) returns (DepositResponse);
     rpc Lock(LockRequest) returns (LockResponse);
-    rpc Withdraw(WithdrawalRequest) returns (WithdrawalResponse);
+    rpc Withdraw(stream WithdrawalRequest) returns (WithdrawalResponse);
 }
 
 message DepositRequest {
-    string user_id = 1;
-    float amount = 2;
-    string type = 3;
-    google.protobuf.Timestamp updated = 4;
+    string id = 1;
+    string user_id = 2;
+    float amount = 3;
+    string type = 4;
+    google.protobuf.Timestamp updated = 5;
 }
 
 message DepositResponse {
-    string user_id = 1;
-    string withdrawalMessage = 2;
-    status depositResponse = 3;
+    string id = 1; 
+    status depositStatus = 2;
+    google.protobuf.Timestamp dateCreated = 3;
 }
 
 message LockRequest {
-    float amount = 1;
+    string lockId = 1;
+    float amount = 2;
     google.protobuf.Timestamp duration = 3;
 }
 
 message LockResponse {  
-    status lockResponse = 1;
+    string lockResponse = 1;
+    status lockStatus = 2;
+    google.protobuf.Timestamp maturityDate = 3;
 }
 
 message WithdrawalRequest {
-    string userId = 1;
-    float amount = 2;
+    string id  = 1;
+    string userId = 2;
+    float amount = 3;
+    google.protobuf.Timestamp dateCreated = 4;
 }
 
 message WithdrawalResponse {
-    string withdrawalMessage = 1;
-    status withdrawalResonse = 2;
+    string withdrawalId = 1;
+    string withdrawalResponse = 2;
+    status withdrawalStatus = 3;
 }
 
 enum status {
