@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/midepeter/grpc-service/db/userStore"
+	db "github.com/midepeter/grpc-service/db/userStore"
 	"github.com/midepeter/grpc-service/proto/userpb"
 	"github.com/midepeter/grpc-service/utils"
 	"github.com/rs/zerolog"
@@ -78,6 +78,8 @@ func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.Us
 }
 
 func (s *Server) SignOut(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
-	
+	//Since jwt token are stateless-- we cannot forcefully expire token so the best form of
+	//of signing out is for the token to be deleted in the client side
+	s.log.Info().Msgf("%s has loggged out successfully", in.Email)
 	return nil, nil
 }

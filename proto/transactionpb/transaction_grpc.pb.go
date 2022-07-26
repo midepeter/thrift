@@ -22,9 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TransactionsClient interface {
-	Deposit(ctx context.Context, opts ...grpc.CallOption) (Transactions_DepositClient, error)
+	Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error)
 	Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error)
-	Withdraw(ctx context.Context, in *WithdrawalRequest, opts ...grpc.CallOption) (*WithdrawalResponse, error)
+	Withdraw(ctx context.Context, opts ...grpc.CallOption) (Transactions_WithdrawClient, error)
 }
 
 type transactionsClient struct {
@@ -35,38 +35,13 @@ func NewTransactionsClient(cc grpc.ClientConnInterface) TransactionsClient {
 	return &transactionsClient{cc}
 }
 
-func (c *transactionsClient) Deposit(ctx context.Context, opts ...grpc.CallOption) (Transactions_DepositClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Transactions_ServiceDesc.Streams[0], "/transaction.Transactions/Deposit", opts...)
+func (c *transactionsClient) Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error) {
+	out := new(DepositResponse)
+	err := c.cc.Invoke(ctx, "/transaction.Transactions/Deposit", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &transactionsDepositClient{stream}
-	return x, nil
-}
-
-type Transactions_DepositClient interface {
-	Send(*DepositRequest) error
-	CloseAndRecv() (*DepositResponse, error)
-	grpc.ClientStream
-}
-
-type transactionsDepositClient struct {
-	grpc.ClientStream
-}
-
-func (x *transactionsDepositClient) Send(m *DepositRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *transactionsDepositClient) CloseAndRecv() (*DepositResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(DepositResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 func (c *transactionsClient) Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error) {
@@ -78,22 +53,47 @@ func (c *transactionsClient) Lock(ctx context.Context, in *LockRequest, opts ...
 	return out, nil
 }
 
-func (c *transactionsClient) Withdraw(ctx context.Context, in *WithdrawalRequest, opts ...grpc.CallOption) (*WithdrawalResponse, error) {
-	out := new(WithdrawalResponse)
-	err := c.cc.Invoke(ctx, "/transaction.Transactions/Withdraw", in, out, opts...)
+func (c *transactionsClient) Withdraw(ctx context.Context, opts ...grpc.CallOption) (Transactions_WithdrawClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Transactions_ServiceDesc.Streams[0], "/transaction.Transactions/Withdraw", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &transactionsWithdrawClient{stream}
+	return x, nil
+}
+
+type Transactions_WithdrawClient interface {
+	Send(*WithdrawalRequest) error
+	CloseAndRecv() (*WithdrawalResponse, error)
+	grpc.ClientStream
+}
+
+type transactionsWithdrawClient struct {
+	grpc.ClientStream
+}
+
+func (x *transactionsWithdrawClient) Send(m *WithdrawalRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *transactionsWithdrawClient) CloseAndRecv() (*WithdrawalResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(WithdrawalResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // TransactionsServer is the server API for Transactions service.
 // All implementations must embed UnimplementedTransactionsServer
 // for forward compatibility
 type TransactionsServer interface {
-	Deposit(Transactions_DepositServer) error
+	Deposit(context.Context, *DepositRequest) (*DepositResponse, error)
 	Lock(context.Context, *LockRequest) (*LockResponse, error)
-	Withdraw(context.Context, *WithdrawalRequest) (*WithdrawalResponse, error)
+	Withdraw(Transactions_WithdrawServer) error
 	mustEmbedUnimplementedTransactionsServer()
 }
 
@@ -101,14 +101,14 @@ type TransactionsServer interface {
 type UnimplementedTransactionsServer struct {
 }
 
-func (UnimplementedTransactionsServer) Deposit(Transactions_DepositServer) error {
-	return status.Errorf(codes.Unimplemented, "method Deposit not implemented")
+func (UnimplementedTransactionsServer) Deposit(context.Context, *DepositRequest) (*DepositResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Deposit not implemented")
 }
 func (UnimplementedTransactionsServer) Lock(context.Context, *LockRequest) (*LockResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Lock not implemented")
 }
-func (UnimplementedTransactionsServer) Withdraw(context.Context, *WithdrawalRequest) (*WithdrawalResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Withdraw not implemented")
+func (UnimplementedTransactionsServer) Withdraw(Transactions_WithdrawServer) error {
+	return status.Errorf(codes.Unimplemented, "method Withdraw not implemented")
 }
 func (UnimplementedTransactionsServer) mustEmbedUnimplementedTransactionsServer() {}
 
@@ -123,30 +123,22 @@ func RegisterTransactionsServer(s grpc.ServiceRegistrar, srv TransactionsServer)
 	s.RegisterService(&Transactions_ServiceDesc, srv)
 }
 
-func _Transactions_Deposit_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TransactionsServer).Deposit(&transactionsDepositServer{stream})
-}
-
-type Transactions_DepositServer interface {
-	SendAndClose(*DepositResponse) error
-	Recv() (*DepositRequest, error)
-	grpc.ServerStream
-}
-
-type transactionsDepositServer struct {
-	grpc.ServerStream
-}
-
-func (x *transactionsDepositServer) SendAndClose(m *DepositResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *transactionsDepositServer) Recv() (*DepositRequest, error) {
-	m := new(DepositRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Transactions_Deposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DepositRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(TransactionsServer).Deposit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/transaction.Transactions/Deposit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TransactionsServer).Deposit(ctx, req.(*DepositRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Transactions_Lock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -167,22 +159,30 @@ func _Transactions_Lock_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Transactions_Withdraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WithdrawalRequest)
-	if err := dec(in); err != nil {
+func _Transactions_Withdraw_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TransactionsServer).Withdraw(&transactionsWithdrawServer{stream})
+}
+
+type Transactions_WithdrawServer interface {
+	SendAndClose(*WithdrawalResponse) error
+	Recv() (*WithdrawalRequest, error)
+	grpc.ServerStream
+}
+
+type transactionsWithdrawServer struct {
+	grpc.ServerStream
+}
+
+func (x *transactionsWithdrawServer) SendAndClose(m *WithdrawalResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *transactionsWithdrawServer) Recv() (*WithdrawalRequest, error) {
+	m := new(WithdrawalRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(TransactionsServer).Withdraw(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/transaction.Transactions/Withdraw",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransactionsServer).Withdraw(ctx, req.(*WithdrawalRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // Transactions_ServiceDesc is the grpc.ServiceDesc for Transactions service.
@@ -193,18 +193,18 @@ var Transactions_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TransactionsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Lock",
-			Handler:    _Transactions_Lock_Handler,
+			MethodName: "Deposit",
+			Handler:    _Transactions_Deposit_Handler,
 		},
 		{
-			MethodName: "Withdraw",
-			Handler:    _Transactions_Withdraw_Handler,
+			MethodName: "Lock",
+			Handler:    _Transactions_Lock_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Deposit",
-			Handler:       _Transactions_Deposit_Handler,
+			StreamName:    "Withdraw",
+			Handler:       _Transactions_Withdraw_Handler,
 			ClientStreams: true,
 		},
 	},
