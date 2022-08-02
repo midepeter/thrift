@@ -1,7 +1,0 @@
-version: 1
-packages: 
- - path: "user"
-   name: "grpcservice"
-   engine: "postgresql"
-   schema: "user.sql"
-   queries: "userquery.sql"

@@ -2,26 +2,25 @@ package main
 
 import (
 	"context"
-	"database/sql"
+	"flag"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
-	"flag"
 
-	"github.com/midepeter/grpc-service/db/userStore"
-	"github.com/midepeter/grpc-service/proto/userpb"
-	"github.com/midepeter/grpc-service/server"
-	"google.golang.org/grpc"
-    _ "github.com/lib/pq"
+	_ "github.com/lib/pq"
+	db "github.com/midepeter/thrift/db/userstore"
+	"github.com/midepeter/thrift/proto/userpb"
+	"github.com/midepeter/thrift/server"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"github.com/jackc/pgx/v4"
 )
 
 const (
 	port = ":5000"
 )
-
 
 func main() {
 	// var (
@@ -37,7 +36,7 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	fatal := flag.Bool("fatal", false, "It is used to set the debug level to either fatal or not")
-	
+
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if *fatal {
 		zerolog.SetGlobalLevel(zerolog.FatalLevel)
@@ -45,15 +44,20 @@ func main() {
 
 	connString := fmt.Sprintf("postgres://midepeter:password@localhost:5432/userdb?sslmode=disable")
 
-	dbConn, err := sql.Open("postgres", connString)
+	// dbConn, err := sql.Open("postgres", connString)
+	// if err != nil {
+	// 	log.Fatal().Msg("Failed to set up database connection")
+	// 	panic(err)
+	// }
+
+	conn, err := pgx.Connect(context.Background(), connString)
 	if err != nil {
 		log.Fatal().Msg("Failed to set up database connection")
-		panic(err)
 	}
 
 	srv := grpc.NewServer()
 
-	queries := db.New(dbConn)
+	queries := db.New(conn)
 
 	userpb.RegisterUserServer(srv, &server.Server{
 		Db: queries,
@@ -63,7 +67,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	log.Info().Msgf("Server running on port %s", port)
 	if err := srv.Serve(lis); err != nil {
 		log.Debug().Msg("Server failed abruptly")

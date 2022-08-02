@@ -1,6 +1,0 @@
-CREATE TABLE users (
-    ID INT NOT NULL PRIMARY KEY,
-    Email TEXT NOT NULL,
-    Password TEXT NOT NULL,
-    Date_Created VARCHAR(100) NOT NULL
-);

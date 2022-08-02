@@ -1,0 +1,10 @@
+version: 2
+sql:
+ - engine: "postgresql"
+   schema: "migrations/000001_users_table.up.sql"
+   queries: "userquery.sql"
+   gen:
+     go:
+       package: "userstore"
+       out: "userstore"
+       sql_package: "pgx/v4"

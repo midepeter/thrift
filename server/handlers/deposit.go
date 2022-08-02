@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/midepetem/grpc-ipevice/dtmain/mrdelgrpc-service/domain/model"
-	"github.com/midepeter/grpc-service/proto/transactionpb"
+	"github.com/midepeter/thrift/domain/model"
+	"github.com/midepeter/thrift/proto/transactionpb"
 	"github.com/rs/zerolog"
 )
 
@@ -21,11 +21,11 @@ func (t *Transaction) Deposit(ctx context.Context, req *transactionpb.DepositReq
 
 	t.log.Info().Msgf("The user %v making deposit transaction %s at %s", " ", transactionId, "")
 	if req == nil {
-		return nil, errors.New("Invalid request")
+		return nil, fmt.Errorf("Unable to process invalid request")
 	}
 
 	if req.Amount > float32(t.AccountLimit) {
-		return nil, errors.New("Amount higher than account limit and what can be said at that time")
+		return nil, fmt.Errorf("Amount exceeds limit")
 	}
 
 	//intialBalance of the user needs to be fetched

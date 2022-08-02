@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
-	db "github.com/midepeter/grpc-service/db/userStore"
-	"github.com/midepeter/grpc-service/proto/userpb"
-	"github.com/midepeter/grpc-service/utils"
+	db "github.com/midepeter/thrift/db/userstore"
+	"github.com/midepeter/thrift/proto/userpb"
+	"github.com/midepeter/thrift/utils"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,7 +22,7 @@ type Server struct {
 func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
 	var err error
 	if in.Email == "" || in.Password == " " {
-		return nil, errors.New("Invalid Email or Password")
+		return nil, fmt.Errorf("Empty Email or password")
 	}
 
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), 10)
@@ -30,17 +30,15 @@ func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.
 		return nil, err
 	}
 
-	dateCreated := time.Now().String()
-
 	user, err := s.Db.CreateUser(ctx, db.CreateUserParams{
 		ID:          1,
 		Email:       in.Email,
 		Password:    string(hashPassword),
-		DateCreated: dateCreated,
+		CreatedAt: time.Now(),
 	})
 
 	if err != nil {
-		return nil, errors.New("Unable to insert user details into database")
+		return nil, fmt.Errorf("Error while creating the user %v", err)
 	}
 
 	s.log.Info().Msgf("The user %s registered successfully", user.Email)
@@ -53,7 +51,7 @@ func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.
 
 func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
 	if in.Email == "" && in.Password == "" {
-		return nil, errors.New("Invalid Email or Password")
+		return nil, fmt.Errorf("Empty Email or Password")
 	}
 
 	// switch in {
@@ -68,7 +66,7 @@ func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.Us
 
 	token, err := utils.GenerateJwtToken(in.Email)
 	if err != nil {
-		return nil, errors.New("Unable to generate jwt token")
+		return nil, fmt.Errorf("Unable to generate jwt token", err)
 	}
 
 	return &userpb.UserResponse{

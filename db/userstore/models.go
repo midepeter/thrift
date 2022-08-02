@@ -2,13 +2,19 @@
 // versions:
 //   sqlc v1.14.0
 
-package db
+package userstore
 
-import ()
+import (
+	"time"
+)
 
 type User struct {
 	ID          int32
+	FirstName   string
+	LastName    string
 	Email       string
 	Password    string
-	DateCreated string
+	PhoneNumber string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
