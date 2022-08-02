@@ -19,7 +19,7 @@ type Server struct {
 	userpb.UnimplementedUserServer
 }
 
-func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.UserResponse, error) {
+func (s *Server) Register(ctx context.Context, in *userpb.RegisterUser) (*userpb.UserResponse, error) {
 	var err error
 	if in.Email == "" || in.Password == " " {
 		return nil, fmt.Errorf("Empty Email or password")
@@ -33,8 +33,12 @@ func (s *Server) Register(ctx context.Context, in *userpb.UserRequest) (*userpb.
 	user, err := s.Db.CreateUser(ctx, db.CreateUserParams{
 		ID:          1,
 		Email:       in.Email,
+		FirstName:   in.FirstName,
+		LastName:    in.LastName,
+		PhoneNumber: in.PhoneNumber,
 		Password:    string(hashPassword),
-		CreatedAt: time.Now(),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	})
 
 	if err != nil {
@@ -66,7 +70,7 @@ func (s *Server) SignIn(ctx context.Context, in *userpb.UserRequest) (*userpb.Us
 
 	token, err := utils.GenerateJwtToken(in.Email)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to generate jwt token", err)
+		return nil, fmt.Errorf("Unable to generate jwt token %v", err)
 	}
 
 	return &userpb.UserResponse{
