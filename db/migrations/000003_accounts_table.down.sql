@@ -1,1 +1,1 @@
-DROP DATABASE IF EXISTS `accounts`;
+DROP DATABASE IF EXISTS accounts;

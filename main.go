@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/jackc/pgx/v4"
 	_ "github.com/lib/pq"
 	db "github.com/midepeter/thrift/db/userstore"
 	"github.com/midepeter/thrift/proto/userpb"
@@ -15,7 +16,8 @@ import (
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"github.com/jackc/pgx/v4"
+
+	_ "net/http/pprof"
 )
 
 const (

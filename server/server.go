@@ -31,7 +31,6 @@ func (s *Server) Register(ctx context.Context, in *userpb.RegisterUser) (*userpb
 	}
 
 	user, err := s.Db.CreateUser(ctx, db.CreateUserParams{
-		ID:          1,
 		Email:       in.Email,
 		FirstName:   in.FirstName,
 		LastName:    in.LastName,
@@ -45,7 +44,7 @@ func (s *Server) Register(ctx context.Context, in *userpb.RegisterUser) (*userpb
 		return nil, fmt.Errorf("Error while creating the user %v", err)
 	}
 
-	s.log.Info().Msgf("The user %s registered successfully", user.Email)
+	//s.log.Info().Msgf("The user %s registered successfully", user.Email)
 
 	return &userpb.UserResponse{
 		UserID:     strconv.Itoa(int(user.ID)),
