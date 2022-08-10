@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type TransactionsClient interface {
 	Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error)
 	Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error)
+	Balance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error)
 	Withdraw(ctx context.Context, opts ...grpc.CallOption) (Transactions_WithdrawClient, error)
 }
 
@@ -47,6 +48,15 @@ func (c *transactionsClient) Deposit(ctx context.Context, in *DepositRequest, op
 func (c *transactionsClient) Lock(ctx context.Context, in *LockRequest, opts ...grpc.CallOption) (*LockResponse, error) {
 	out := new(LockResponse)
 	err := c.cc.Invoke(ctx, "/transaction.Transactions/Lock", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *transactionsClient) Balance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error) {
+	out := new(BalanceResponse)
+	err := c.cc.Invoke(ctx, "/transaction.Transactions/Balance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +103,7 @@ func (x *transactionsWithdrawClient) CloseAndRecv() (*WithdrawalResponse, error)
 type TransactionsServer interface {
 	Deposit(context.Context, *DepositRequest) (*DepositResponse, error)
 	Lock(context.Context, *LockRequest) (*LockResponse, error)
+	Balance(context.Context, *BalanceRequest) (*BalanceResponse, error)
 	Withdraw(Transactions_WithdrawServer) error
 	mustEmbedUnimplementedTransactionsServer()
 }
@@ -106,6 +117,9 @@ func (UnimplementedTransactionsServer) Deposit(context.Context, *DepositRequest)
 }
 func (UnimplementedTransactionsServer) Lock(context.Context, *LockRequest) (*LockResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Lock not implemented")
+}
+func (UnimplementedTransactionsServer) Balance(context.Context, *BalanceRequest) (*BalanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Balance not implemented")
 }
 func (UnimplementedTransactionsServer) Withdraw(Transactions_WithdrawServer) error {
 	return status.Errorf(codes.Unimplemented, "method Withdraw not implemented")
@@ -159,6 +173,24 @@ func _Transactions_Lock_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Transactions_Balance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BalanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TransactionsServer).Balance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/transaction.Transactions/Balance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TransactionsServer).Balance(ctx, req.(*BalanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Transactions_Withdraw_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(TransactionsServer).Withdraw(&transactionsWithdrawServer{stream})
 }
@@ -199,6 +231,10 @@ var Transactions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Lock",
 			Handler:    _Transactions_Lock_Handler,
+		},
+		{
+			MethodName: "Balance",
+			Handler:    _Transactions_Balance_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

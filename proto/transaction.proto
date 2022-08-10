@@ -8,19 +8,20 @@ option go_package = "./transactionpb";
 service Transactions {
     rpc Deposit (DepositRequest) returns (DepositResponse);
     rpc Lock(LockRequest) returns (LockResponse);
+    rpc Balance(BalanceRequest) returns (BalanceResponse);
     rpc Withdraw(stream WithdrawalRequest) returns (WithdrawalResponse);
 }
 
 message DepositRequest {
     string id = 1;
-    string user_id = 2;
+    int32 user_id = 2;
     float amount = 3;
     string type = 4;
     google.protobuf.Timestamp updated = 5;
 }
 
 message DepositResponse {
-    string id = 1; 
+    string id = 1;
     status depositStatus = 2;
     google.protobuf.Timestamp dateCreated = 3;
 }
@@ -31,7 +32,7 @@ message LockRequest {
     google.protobuf.Timestamp duration = 3;
 }
 
-message LockResponse {  
+message LockResponse {
     string lockResponse = 1;
     status lockStatus = 2;
     google.protobuf.Timestamp maturityDate = 3;
@@ -39,7 +40,7 @@ message LockResponse {
 
 message WithdrawalRequest {
     string id  = 1;
-    string userId = 2;
+    int32 userId = 2;
     float amount = 3;
     google.protobuf.Timestamp dateCreated = 4;
 }
@@ -48,6 +49,16 @@ message WithdrawalResponse {
     string withdrawalId = 1;
     string withdrawalResponse = 2;
     status withdrawalStatus = 3;
+}
+
+message BalanceRequest {
+    int32 userId = 1;
+    google.protobuf.Timestamp startDate = 2;
+}
+
+message BalanceResponse {
+    int32 userId = 1;
+    float balance_amount = 2;
 }
 
 enum status {

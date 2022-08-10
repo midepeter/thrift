@@ -8,3 +8,11 @@ sql:
        package: "userstore"
        out: "userstore"
        sql_package: "pgx/v4"
+ - engine: "postgresql"
+   schema: "migrations/000002_transactions_table.up.sql"
+   queries: "transaction.sql"
+   gen:
+     go:
+       package: "transactions"
+       out: "transactions"
+       sql_package: "pgx/v4"
