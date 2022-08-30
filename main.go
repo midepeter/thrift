@@ -4,20 +4,25 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 
 	"github.com/jackc/pgx/v4"
 	_ "github.com/lib/pq"
-	db "github.com/midepeter/thrift/db/userstore"
-	"github.com/midepeter/thrift/proto/userpb"
-	"github.com/midepeter/thrift/server"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
+	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/midepeter/thrift/db/transactions"
+	db "github.com/midepeter/thrift/db/userstore"
+	"github.com/midepeter/thrift/gen/proto/transaction/transactionpbconnect"
+	"github.com/midepeter/thrift/gen/proto/user/userpbconnect"
+	"github.com/midepeter/thrift/server"
+	"github.com/midepeter/thrift/server/handlers"
 )
 
 const (
@@ -46,35 +51,47 @@ func main() {
 
 	connString := fmt.Sprintf("postgres://midepeter:password@localhost:5432/userdb?sslmode=disable")
 
-	// dbConn, err := sql.Open("postgres", connString)
-	// if err != nil {
-	// 	log.Fatal().Msg("Failed to set up database connection")
-	// 	panic(err)
-	// }
-
 	conn, err := pgx.Connect(context.Background(), connString)
 	if err != nil {
 		log.Fatal().Msg("Failed to set up database connection")
 	}
 
-	srv := grpc.NewServer()
+	//srv := grpc.NewServer()
 
 	queries := db.New(conn)
+	transactionQueries := transactions.New(conn)
 
-	userpb.RegisterUserServer(srv, &server.Server{
+	mux := http.NewServeMux()
+	///transactionpb.RegisterTransactionsServer(srv, &handlers.Transaction{
+	//	Db:           transactionQueries,
+	//	AccountLimit: 10000,
+	//})
+	//
+	userPath, userHandler := userpbconnect.NewUserHandler(&server.Server{
 		Db: queries,
 	})
 
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		panic(err)
-	}
+	transactionPath, transactionHandler := transactionpbconnect.NewTransactionsHandler(&handlers.Transaction{
+		Db:           transactionQueries,
+		AccountLimit: 10000,
+	})
 
-	log.Info().Msgf("Server running on port %s", port)
-	if err := srv.Serve(lis); err != nil {
-		log.Debug().Msg("Server failed abruptly")
-		panic(err)
-	}
+	log.Info().Msg(fmt.Sprintf("The userPath %v userHandler %v\n", userPath, userHandler))
+	log.Info().Msg(fmt.Sprintf("The transactionPath %v transactionHandler %v\n", transactionPath, transactionHandler))
+	mux.Handle(userPath, userHandler)
+	mux.Handle(transactionPath, transactionHandler)
+
+	http.ListenAndServe("localhost:5000", h2c.NewHandler(mux, &http2.Server{}))
+	//lis, err := net.Listen("tcp", port)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	//log.Info().Msgf("Server running on port %s", port)
+	//if err := srv.Serve(lis); err != nil {
+	//	log.Debug().Msg("Server failed abruptly")
+	//	panic(err)
+	//}
 
 	var cancel context.CancelFunc
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)

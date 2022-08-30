@@ -3,30 +3,24 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/midepeter/thrift/domain/model"
-	"github.com/midepeter/thrift/proto/transactionpb"
+	"github.com/bufbuild/connect-go"
+	transactionpb "github.com/midepeter/thrift/gen/proto/transaction"
 )
 
-func (t *Transaction) Balance(ctx context.Context, req *transactionpb.BalanceRequest) (*transactionpb.BalanceRespone, error) {
+func (t *Transaction) Balance(ctx context.Context, req *connect.Request[transactionpb.BalanceRequest]) (*connect.Response[transactionpb.BalanceResponse], error) {
 	if req == nil {
 		return nil, fmt.Errorf("Invalid balance request")
 	}
 
-	//This is an unncessary code
-	requestBalance := model.Balance{
-		UserId:     req.UserId,
-		UpdateTime: time.Now(),
-	}
-
-	balance, err := t.Db.GetBalance(ctx, requestBalance.UserID)
+	balance, err := t.Db.GetBalance(ctx, req.Msg.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to return balance from db: %v", err)
 	}
 
-	return transactionpb.BalanceResponse{
-		UserId:        requestBalance.UserID,
-		BalanceAmount: balance,
-	}, nil
+	res := connect.NewResponse(&transactionpb.BalanceResponse{
+		UserId:        req.Msg.UserId,
+		BalanceAmount: float32(balance.BalanceAmount),
+	})
+	return res, nil
 }

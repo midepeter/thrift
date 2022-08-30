@@ -9,14 +9,13 @@ service Transactions {
     rpc Deposit (DepositRequest) returns (DepositResponse);
     rpc Lock(LockRequest) returns (LockResponse);
     rpc Balance(BalanceRequest) returns (BalanceResponse);
-    rpc Withdraw(stream WithdrawalRequest) returns (WithdrawalResponse);
+    rpc Withdraw(WithdrawalRequest) returns (WithdrawalResponse);
 }
 
 message DepositRequest {
     string id = 1;
     int32 user_id = 2;
     float amount = 3;
-    string type = 4;
     google.protobuf.Timestamp updated = 5;
 }
 

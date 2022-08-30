@@ -1,7 +1,7 @@
 --
 CREATE TABLE transactions (
   transaction_id VARCHAR(50) NOT NULL,
-  user_id INT NOT NULL UNIQUE,
+  user_id INT NOT NULL ,
   currency_id INT  NOT NULL,
   transaction_amount DECIMAL(18,4) NOT NULL,
   transaction_date DATE
@@ -18,6 +18,4 @@ CREATE INDEX UQ_balances_user_id_currency_id ON balances (
   user_id,
   currency_id
 );
-
-
 
