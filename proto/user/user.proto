@@ -6,7 +6,7 @@ option go_package = "./userpb";
 
 service User {
     rpc Register(RegisterUser) returns (UserResponse) {}
-    rpc SignIn(UserRequest) returns(UserResponse) {}
+    rpc SignIn(UserRequest) returns(SignInResponse) {}
     rpc SignOut(UserRequest) returns(UserResponse) {}
 }
 
@@ -26,4 +26,9 @@ message UserResponse {
 message UserRequest {
     string email = 1;
     string password = 2;
+}
+
+message SignInResponse {
+    string Token = 1;
+    bool StatusCode = 2;
 }

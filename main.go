@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	_ "github.com/lib/pq"
@@ -23,6 +25,7 @@ import (
 	"github.com/midepeter/thrift/gen/proto/user/userpbconnect"
 	"github.com/midepeter/thrift/server"
 	"github.com/midepeter/thrift/server/handlers"
+	"github.com/midepeter/thrift/server/middleware"
 )
 
 const (
@@ -30,19 +33,16 @@ const (
 )
 
 func main() {
-	// var (
-	// 	certFile string = "server.crt"
-	// 	keyFile  string = "server.key"
-	// )
-
-	// srv, err := setUpTLS(certFile, keyFile)
-	// if err != nil {
-	// 	panic(fmt.Errorf("Failed while setting up tls %v\n", err))
-	// }
+	var (
+		//certFile string = "./out/localhsot.crt"
+		//	keyFile  string = "./out/localhost.key"
+		certFile string = ""
+		keyFile  string = ""
+	)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	fatal := flag.Bool("fatal", false, "It is used to set the debug level to either fatal or not")
+	fatal := flag.Bool("fatal", false, "It is used to set the log level")
 
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if *fatal {
@@ -56,17 +56,11 @@ func main() {
 		log.Fatal().Msg("Failed to set up database connection")
 	}
 
-	//srv := grpc.NewServer()
-
 	queries := db.New(conn)
 	transactionQueries := transactions.New(conn)
 
 	mux := http.NewServeMux()
-	///transactionpb.RegisterTransactionsServer(srv, &handlers.Transaction{
-	//	Db:           transactionQueries,
-	//	AccountLimit: 10000,
-	//})
-	//
+
 	userPath, userHandler := userpbconnect.NewUserHandler(&server.Server{
 		Db: queries,
 	})
@@ -77,21 +71,25 @@ func main() {
 	})
 
 	log.Info().Msg(fmt.Sprintf("The userPath %v userHandler %v\n", userPath, userHandler))
-	log.Info().Msg(fmt.Sprintf("The transactionPath %v transactionHandler %v\n", transactionPath, transactionHandler))
+	//	log.Info().Msg(fmt.Sprintf("The transactionPath %v transactionHandler %v\n", transactionPath, transactionHandler))
 	mux.Handle(userPath, userHandler)
 	mux.Handle(transactionPath, transactionHandler)
 
-	http.ListenAndServe("localhost:5000", h2c.NewHandler(mux, &http2.Server{}))
-	//lis, err := net.Listen("tcp", port)
-	//if err != nil {
-	//	panic(err)
-	//}
+	h2s := &http2.Server{}
 
-	//log.Info().Msgf("Server running on port %s", port)
-	//if err := srv.Serve(lis); err != nil {
-	//	log.Debug().Msg("Server failed abruptly")
-	//	panic(err)
-	//}
+	srv := &http.Server{
+		Addr:         port,
+		ReadTimeout:  5 * time.Minute,
+		WriteTimeout: 10 * time.Second,
+		Handler:      h2c.NewHandler(middleware.AuthMiddleware(mux), h2s),
+		TLSConfig:    &tls.Config{ServerName: "localhost"},
+	}
+
+	if certFile != "" && keyFile != "" {
+		srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		srv.ListenAndServe()
+	}
 
 	var cancel context.CancelFunc
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -103,18 +101,3 @@ func main() {
 		cancel()
 	}
 }
-
-// func setUpTLS(certFile, keyFile string) (*grpc.Server, error) {
-// 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("Unable to parse certificates: %v\n", err)
-
-// 	}
-
-// 	options := []grpc.ServerOption{
-// 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
-// 	}
-
-// 	srv := grpc.NewServer(options...)
-// 	return srv, nil
-// }

@@ -55,7 +55,7 @@ func (s *Server) Register(ctx context.Context, in *connect.Request[userpb.Regist
 	return res, nil
 }
 
-func (s *Server) SignIn(ctx context.Context, in *connect.Request[userpb.UserRequest]) (*connect.Response[userpb.UserResponse], error) {
+func (s *Server) SignIn(ctx context.Context, in *connect.Request[userpb.UserRequest]) (*connect.Response[userpb.SignInResponse], error) {
 	if in.Msg.Email == "" && in.Msg.Password == "" {
 		return nil, fmt.Errorf("Empty Email or Password")
 	}
@@ -65,10 +65,8 @@ func (s *Server) SignIn(ctx context.Context, in *connect.Request[userpb.UserRequ
 		return nil, fmt.Errorf("Unable to generate jwt token %v", err)
 	}
 
-	log.Println("the user has succefully logged out")
-
-	res := connect.NewResponse(&userpb.UserResponse{
-		UserID:     token,
+	res := connect.NewResponse(&userpb.SignInResponse{
+		Token:      token,
 		StatusCode: true,
 	})
 	return res, nil

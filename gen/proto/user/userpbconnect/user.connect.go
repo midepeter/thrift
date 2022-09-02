@@ -29,7 +29,7 @@ const (
 // UserClient is a client for the user.User service.
 type UserClient interface {
 	Register(context.Context, *connect_go.Request[userpb.RegisterUser]) (*connect_go.Response[userpb.UserResponse], error)
-	SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error)
+	SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.SignInResponse], error)
 	SignOut(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error)
 }
 
@@ -48,7 +48,7 @@ func NewUserClient(httpClient connect_go.HTTPClient, baseURL string, opts ...con
 			baseURL+"/user.User/Register",
 			opts...,
 		),
-		signIn: connect_go.NewClient[userpb.UserRequest, userpb.UserResponse](
+		signIn: connect_go.NewClient[userpb.UserRequest, userpb.SignInResponse](
 			httpClient,
 			baseURL+"/user.User/SignIn",
 			opts...,
@@ -64,7 +64,7 @@ func NewUserClient(httpClient connect_go.HTTPClient, baseURL string, opts ...con
 // userClient implements UserClient.
 type userClient struct {
 	register *connect_go.Client[userpb.RegisterUser, userpb.UserResponse]
-	signIn   *connect_go.Client[userpb.UserRequest, userpb.UserResponse]
+	signIn   *connect_go.Client[userpb.UserRequest, userpb.SignInResponse]
 	signOut  *connect_go.Client[userpb.UserRequest, userpb.UserResponse]
 }
 
@@ -74,7 +74,7 @@ func (c *userClient) Register(ctx context.Context, req *connect_go.Request[userp
 }
 
 // SignIn calls user.User.SignIn.
-func (c *userClient) SignIn(ctx context.Context, req *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error) {
+func (c *userClient) SignIn(ctx context.Context, req *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.SignInResponse], error) {
 	return c.signIn.CallUnary(ctx, req)
 }
 
@@ -86,7 +86,7 @@ func (c *userClient) SignOut(ctx context.Context, req *connect_go.Request[userpb
 // UserHandler is an implementation of the user.User service.
 type UserHandler interface {
 	Register(context.Context, *connect_go.Request[userpb.RegisterUser]) (*connect_go.Response[userpb.UserResponse], error)
-	SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error)
+	SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.SignInResponse], error)
 	SignOut(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error)
 }
 
@@ -122,7 +122,7 @@ func (UnimplementedUserHandler) Register(context.Context, *connect_go.Request[us
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("user.User.Register is not implemented"))
 }
 
-func (UnimplementedUserHandler) SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.UserResponse], error) {
+func (UnimplementedUserHandler) SignIn(context.Context, *connect_go.Request[userpb.UserRequest]) (*connect_go.Response[userpb.SignInResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("user.User.SignIn is not implemented"))
 }
 
