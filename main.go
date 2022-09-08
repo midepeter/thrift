@@ -5,20 +5,19 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	"net/http"
-	_ "net/http/pprof"
-
+	postgres "github.com/midepeter/thrift/db"
 	"github.com/midepeter/thrift/db/transactions"
 	db "github.com/midepeter/thrift/db/userstore"
 	"github.com/midepeter/thrift/gen/proto/transaction/transactionpbconnect"
@@ -28,17 +27,19 @@ import (
 	"github.com/midepeter/thrift/server/middleware"
 )
 
-const (
-	port = ":5000"
-)
-
 func main() {
+	ctx := context.Background()
 	var (
 		//certFile string = "./out/localhsot.crt"
-		//	keyFile  string = "./out/localhost.key"
+		//keyFile  string = "./out/localhost.key"
 		certFile string = ""
 		keyFile  string = ""
 	)
+
+	err := godotenv.Load()
+	if err != nil {
+		panic(fmt.Errorf("Unable to load environment variables %v", err))
+	}
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
@@ -49,11 +50,18 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.FatalLevel)
 	}
 
-	connString := fmt.Sprintf("postgres://midepeter:password@localhost:5432/userdb?sslmode=disable")
+	DBUser := os.Getenv("DBUSER")
+	DBHost := os.Getenv("DBHOST")
+	DBPassword := os.Getenv("DBPASSWORD")
+	DBName := os.Getenv("DBNAME")
+	DBPort := os.Getenv("DBPORT")
 
-	conn, err := pgx.Connect(context.Background(), connString)
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", DBUser, DBPassword, DBHost, DBPort, DBName)
+	log.Info().Msgf("The connection string %s", connString)
+	pg := postgres.NewPostgres()
+	conn, err := pg.Open(ctx, connString)
 	if err != nil {
-		log.Fatal().Msg("Failed to set up database connection")
+		panic(fmt.Errorf("Unable to connect to db: %v", err))
 	}
 
 	queries := db.New(conn)
@@ -71,14 +79,13 @@ func main() {
 	})
 
 	log.Info().Msg(fmt.Sprintf("The userPath %v userHandler %v\n", userPath, userHandler))
-	//	log.Info().Msg(fmt.Sprintf("The transactionPath %v transactionHandler %v\n", transactionPath, transactionHandler))
 	mux.Handle(userPath, userHandler)
 	mux.Handle(transactionPath, transactionHandler)
 
 	h2s := &http2.Server{}
 
 	srv := &http.Server{
-		Addr:         port,
+		Addr:         os.Getenv("PORT"),
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 10 * time.Second,
 		Handler:      h2c.NewHandler(middleware.AuthMiddleware(mux), h2s),
@@ -92,7 +99,7 @@ func main() {
 	}
 
 	var cancel context.CancelFunc
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	ctx, cancel = signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
 	select {
