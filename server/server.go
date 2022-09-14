@@ -23,7 +23,7 @@ type Server struct {
 func (s *Server) Register(ctx context.Context, in *connect.Request[userpb.RegisterUser]) (*connect.Response[userpb.UserResponse], error) {
 	var err error
 	if in.Msg.GetEmail() == "" || in.Msg.GetPassword() == " " {
-		return nil, log.Println("Empty Email or password")
+		return nil, fmt.Errorf("Empty Email or password")
 	}
 
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(in.Msg.Password), 10)
