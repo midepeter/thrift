@@ -23,7 +23,7 @@ type Server struct {
 func (s *Server) Register(ctx context.Context, in *connect.Request[userpb.RegisterUser]) (*connect.Response[userpb.UserResponse], error) {
 	var err error
 	if in.Msg.GetEmail() == "" || in.Msg.GetPassword() == " " {
-		return nil, fmt.Errorf("Empty Email or password")
+		return nil, log.Println("Empty Email or password")
 	}
 
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(in.Msg.Password), 10)
@@ -44,8 +44,6 @@ func (s *Server) Register(ctx context.Context, in *connect.Request[userpb.Regist
 	if err != nil {
 		return nil, fmt.Errorf("Error while creating the user %v", err)
 	}
-
-	//s.log.Info().Msgf("The user %s registered successfully", user.Email)
 
 	res := connect.NewResponse(&userpb.UserResponse{
 		UserID:     strconv.Itoa(int(user.ID)),
@@ -76,7 +74,7 @@ func (s *Server) SignOut(ctx context.Context, in *connect.Request[userpb.UserReq
 	//Since jwt token are stateless-- we cannot forcefully expire token so the best form of
 	//of signing out is for the token to be deleted in the client side
 	//s.log.Info().Msgf("%s has loggged out successfully", in.Email)
-	log.Println("The user %v has logged out successfully", in.Msg.Email)
+	log.Printf("The user %v has logged out successfully", in.Msg.Email)
 	res := connect.NewResponse(&userpb.UserResponse{
 		UserID:     in.Msg.Email,
 		StatusCode: true,

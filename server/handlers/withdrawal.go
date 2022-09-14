@@ -24,7 +24,7 @@ func (t *Transaction) Withdraw(ctx context.Context, req *connect.Request[transac
 
 	balance, err := t.Db.GetBalance(ctx, req.Msg.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch user's balance", err)
+		return nil, fmt.Errorf("Unable to fetch user's balance %v", err)
 	}
 
 	if req.Msg.Amount > float32(balance.BalanceAmount) {
@@ -46,7 +46,7 @@ func (t *Transaction) Withdraw(ctx context.Context, req *connect.Request[transac
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to make withdrawal transaction ", err)
+		return nil, fmt.Errorf("Unable to make withdrawal transaction %v", err)
 	}
 
 	res := connect.NewResponse(&transactionpb.WithdrawalResponse{
