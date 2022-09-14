@@ -1,4 +1,4 @@
-FROM golang AS builder
+FROM golang:alpine AS builder
 ENV CGO_ENABLED 0
 ENV GOOS=linux
 ARG BUILD_REF
@@ -11,14 +11,17 @@ WORKDIR /thrift
 RUN go mod download
 
 COPY . /thrift
+
+WORKDIR /thrift
 RUN go build -o thrift -ldflags "-X main.build=${BUILD_REF}"
 
-
-FROM ubuntu:latest
+FROM apline
 RUN apt-get update && apt-get install -y
 ENV LANG en_US.utf8
 WORKDIR /root/
-COPY --from=builder ./thrift ./
+COPY --from=builder . ./
+COPY .env ./
 
-CMD [ "./thrift" ]
-
+RUN chmod +x ./thrift/thrift
+RUN ls -l thrift
+CMD [ "/root/thrift/thrift" ]

@@ -1,8 +1,9 @@
 package jwt
 
 import (
-	"bytes"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v4"
@@ -38,20 +39,20 @@ func GenerateJwtToken(Email string) (string, error) {
 	return ss, nil
 }
 
-func ParseToken(tokenString string) string {
-	_, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (user interface{}, err error) {
+func ParseToken(tokenString string) (*jwt.Token, *Claims, error) {
+	tokenString = strings.Replace(tokenString, "Bearer ", "", -1)
+	if tokenString == "" {
+		return nil, nil, fmt.Errorf("Invalid token string")
+	}
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (user interface{}, err error) {
 		return secretKey, nil
 	})
 
 	if err != nil {
-		panic("Unable to verify claims")
+		return nil, nil, fmt.Errorf("Unauthorized token")
 	}
 
-	out := new(bytes.Buffer)
-
-	// if claims, ok := t.Claims.(*Claims); ok && token.Valid {
-	// 	fmt.Fprintf(out, "%v %v", claims.userId, claims.Issuer)
-	// }
-
-	return out.String()
+	return token, claims, nil
 }
