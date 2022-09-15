@@ -1,4 +1,4 @@
-# thrift-app
+# Thrift-app
 This is backend for a financial application wrriten in golang. It entails all the features of a simple finance application
 
 ## Technologies Stack
@@ -19,7 +19,7 @@ You can also start up the application using the makefile:
 ```
 1. create the .env file using the .env.sample as template
 2. populate the .env file with your postgres db credentials
-3. run make run
+3. run `make run`
 ```
 ## Project status
 The basic functionality of the project is done but I intend to improve on the project structure in the future and write proper test for the application.
