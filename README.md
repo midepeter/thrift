@@ -6,8 +6,9 @@ This is backend for a financial application wrriten in golang. It entails all th
 
 ## Features
 - Deposit -- Deposit funds at any time you like.
-- Lock -- Lock will check your Current balance and lock an amount specified which you are not allowed to withdraw for a period of time
-- Withdraw money -- Withdraw a specified an amount of money and it effected in your database
+- Lock -- Lock will check your Current balance and lock an amount specified which you are not allowed to withdraw for a specified period of time.
+- Withdraw money -- Withdraw a specified an amount of money and it effected in your database.
+- Balance -- Request for your balance at any point in time -- It is calculated on the fly as the sum of all transactions perfomed by the user and returned.
 
 ## Setup
 You can use docker to start the application by running:
