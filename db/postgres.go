@@ -27,6 +27,8 @@ func (p *Postgres) Open(ctx context.Context, url string) (*pgx.Conn, error) {
 		return nil, fmt.Errorf("Database connection dead %v", err)
 	}
 
+	defer p.Close(ctx)
+
 	return p.Conn, nil
 }
 

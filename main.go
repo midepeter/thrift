@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -18,62 +17,60 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	postgres "github.com/midepeter/thrift/db"
-	"github.com/midepeter/thrift/db/transactions"
+	transaction "github.com/midepeter/thrift/db/transactions"
 	db "github.com/midepeter/thrift/db/userstore"
 	"github.com/midepeter/thrift/gen/proto/transaction/transactionpbconnect"
 	"github.com/midepeter/thrift/gen/proto/user/userpbconnect"
-	"github.com/midepeter/thrift/server"
-	"github.com/midepeter/thrift/server/handlers"
+	"github.com/midepeter/thrift/server/handlers/transactions"
 	"github.com/midepeter/thrift/server/middleware"
+	"github.com/midepeter/thrift/server/user"
 )
 
 func main() {
 	ctx := context.Background()
-	var (
-		//certFile string = "./out/localhsot.crt"
-		//keyFile  string = "./out/localhost.key"
-		certFile string = ""
-		keyFile  string = ""
-	)
 
 	err := godotenv.Load()
 	if err != nil {
 		panic(fmt.Errorf("Unable to load environment variables %v", err))
 	}
 
+	var (
+		DBUser     = os.Getenv("DBUSER")
+		DBHost     = os.Getenv("DBHOST")
+		DBPassword = os.Getenv("DBPASSWORD")
+		DBName     = os.Getenv("DBNAME")
+		DBPort     = os.Getenv("DBPORT")
+
+		certFile = os.Getenv("CERTFILE")
+		keyFile  = os.Getenv("KEYFILE")
+		logLevel = os.Getenv("LOGLEVEL")
+	)
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	fatal := flag.Bool("fatal", false, "It is used to set the log level")
-
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	if *fatal {
+	if logLevel != "" {
 		zerolog.SetGlobalLevel(zerolog.FatalLevel)
 	}
 
-	DBUser := os.Getenv("DBUSER")
-	DBHost := os.Getenv("DBHOST")
-	DBPassword := os.Getenv("DBPASSWORD")
-	DBName := os.Getenv("DBNAME")
-	DBPort := os.Getenv("DBPORT")
-
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", DBUser, DBPassword, DBHost, DBPort, DBName)
-	log.Info().Msgf("The connection string %s", connString)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", DBUser, DBPassword, DBHost, DBPort, DBName)
+	log.Info().Msgf("The connection string %s", dsn)
 	pg := postgres.NewPostgres()
-	conn, err := pg.Open(ctx, connString)
+	conn, err := pg.Open(ctx, dsn)
 	if err != nil {
 		panic(fmt.Errorf("Unable to connect to db: %v", err))
 	}
 
 	queries := db.New(conn)
-	transactionQueries := transactions.New(conn)
+	transactionQueries := transaction.New(conn)
 
 	mux := http.NewServeMux()
 
-	userPath, userHandler := userpbconnect.NewUserHandler(&server.Server{
+	userPath, userHandler := userpbconnect.NewUserHandler(&user.Server{
 		Db: queries,
 	})
 
-	transactionPath, transactionHandler := transactionpbconnect.NewTransactionsHandler(&handlers.Transaction{
+	transactionPath, transactionHandler := transactionpbconnect.NewTransactionsHandler(&transactions.Transaction{
 		Db:           transactionQueries,
 		AccountLimit: 10000,
 	})
@@ -92,11 +89,13 @@ func main() {
 		TLSConfig:    &tls.Config{ServerName: "localhost"},
 	}
 
-	if certFile != "" && keyFile != "" {
-		srv.ListenAndServeTLS(certFile, keyFile)
-	} else {
-		srv.ListenAndServe()
-	}
+	go func(certFile, keyFile string) {
+		if certFile != "" && keyFile != "" {
+			srv.ListenAndServeTLS(certFile, keyFile)
+		} else {
+			srv.ListenAndServe()
+		}
+	}(certFile, keyFile)
 
 	var cancel context.CancelFunc
 	ctx, cancel = signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
